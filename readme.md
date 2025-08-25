@@ -27,7 +27,7 @@ An intelligent FastAPI application to automatically score, analyze, and rank res
 
 ## ✨ Key Features
 
-- **Advanced AI Analysis** — Primary analysis via Google Gemini with a seamless fallback to Groq's Llama 3 for resilience and speed.
+- **Advanced AI Analysis** — Primary analysis via Google Gemini with a seamless fallback to Groq's GPT-4o for resilience and speed.
 - **Comprehensive Scoring System** — Goes beyond keyword matching and evaluates:
   - Skill Match & Context: Detects required skills and the context in which they're used.
   - Experience Relevance: Measures relevance of past roles and estimates years of experience.
@@ -45,7 +45,7 @@ An intelligent FastAPI application to automatically score, analyze, and rank res
 ## 🛠️ Tech Stack
 
 - **Backend:** FastAPI, Uvicorn
-- **AI / LLMs:** Google Gemini, Groq (Llama 3)
+- **AI / LLMs:** Google Gemini, Groq (GPT-4o)
 - **File Parsing:** PyMuPDF (fitz), python-docx
 - **PDF Generation:** fpdf2
 - **Frontend:** HTML5, CSS3, JavaScript (vanilla)
@@ -66,7 +66,7 @@ Follow the steps below to run the project locally.
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/resume-rater.git
+git clone https://github.com/abdulahad2659/resume-rater.git
 cd resume-rater
 
 # Create and activate virtual environment
@@ -82,11 +82,9 @@ source .venv/bin/activate
 pip install -r reqs.txt
 ```
 
-> If your project uses `requirements.txt` instead of `reqs.txt`, use that file instead.
-
 ### 3. Configuration
 
-Create a `.env` file in the project root (or copy from `.env.example` if provided) and set your keys and basic options:
+Update the `.env` or create a `.env` file in the project root and set your keys and basic options:
 
 ```env
 # --- API Keys (Required) ---
@@ -168,9 +166,6 @@ This project is licensed under the **MIT License** — see the `LICENSE.md` file
 
 ## 📬 Contact
 
-Questions or feature requests? Open an issue or reach out to the repository owner at `your-username` on GitHub.
+Questions or feature requests? Open an issue or reach out to the repository owner at `abdulahad2659` on GitHub.
 
 ---
-
-*Last updated: 2025-08-25*
-
