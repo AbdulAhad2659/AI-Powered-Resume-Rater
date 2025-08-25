@@ -1,0 +1,622 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Resume Rater — AI Candidate Analysis</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --accent:#6366f1;        /* indigo-500 */
+      --accent-2:#0ea5e9;      /* sky-500 */
+      --success:#10b981;       /* emerald-500 */
+      --warning:#f59e0b;       /* amber-500 */
+      --danger:#ef4444;        /* red-500 */
+      --muted:#64748b;         /* slate-500 */
+      --card:rgba(255,255,255,0.85);
+      --bg:#f6f8fc;
+      --border:rgba(2,6,23,0.08);
+    }
+    body{
+      margin:0; padding:24px;
+      font-family:Inter,system-ui,Arial,sans-serif;
+      color:#0f172a;
+      background:
+        radial-gradient(1100px 700px at -10% 0%, rgba(99,102,241,0.16), transparent 60%),
+        radial-gradient(900px 600px at 110% 0%, rgba(14,165,233,0.14), transparent 60%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2ff 55%, #f8fafc 100%);
+    }
+    .container{max-width:1200px;margin:0 auto}
+    .hero{ text-align:center; padding:8px 0 24px; position:relative }
+    .app-title{
+      margin:0;
+      font-weight:800;
+      letter-spacing:-0.02em;
+      font-size: clamp(2.1rem, 3.8vw, 3.25rem);
+      background: linear-gradient(90deg, #0ea5e9, #6366f1 40%, #22c55e 80%);
+      background-size: 200% 200%;
+      -webkit-background-clip:text; background-clip:text; color:transparent;
+      animation: titleGradient 10s ease infinite;
+      text-shadow: 0 6px 30px rgba(99,102,241,0.22);
+    }
+    @keyframes titleGradient{
+      0%{ background-position:0% 50% }
+      50%{ background-position:100% 50% }
+      100%{ background-position:0% 50% }
+    }
+    .subtitle{ margin:10px auto 0; color:var(--muted); font-size:1.05rem; max-width:780px }
+    .card{ background:var(--card); padding:20px;border-radius:14px; box-shadow:0 20px 40px rgba(2,6,23,0.04); border:1px solid var(--border); backdrop-filter:saturate(1.1) blur(6px); }
+    .drop{border:2px dashed #cbd5e1;padding:24px;border-radius:12px;text-align:center;background:rgba(248,250,252,0.7);transition:all 0.2s}
+    .drop.dragover{border-color:var(--accent);background:#eff6ff}
+    .file-list{max-height:240px;overflow:auto;margin-top:16px}
+    .file-item{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;background:#f8fafc;margin-bottom:8px;border:1px solid #e2e8f0}
+    .file-meta{display:flex;align-items:center;gap:12px}
+    .file-icon{width:24px;height:24px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:700}
+    button.primary{background:var(--accent);color:white;border:0;padding:12px 20px;border-radius:10px;cursor:pointer;font-weight:600;transition:transform .05s ease, background .2s}
+    button.primary:hover{background:#4f46e5}
+    button.primary:active{transform:translateY(1px)}
+    button.primary:disabled{background:#9ca3af;cursor:not-allowed}
+    button.ghost{background:transparent;border:1px solid #d1d5db;padding:10px 16px;border-radius:10px;cursor:pointer;transition:all .2s}
+    button.ghost:hover{background:#f3f4f6}
+    button.success{background:var(--success);color:white}
+    button.warning{background:var(--warning);color:white}
+    button.danger{background:var(--danger);color:white}
+    textarea,input[type=text]{width:100%;padding:12px;border-radius:10px;border:1px solid #d1d5db;font-family:inherit;background:#ffffffd9}
+    textarea:focus,input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(99,102,241,0.15)}
+    label.switch{display:flex;align-items:center;gap:12px;font-weight:600}
+    .mode-selector{display:flex;gap:16px;align-items:center}
+    .mode-selector label{display:flex;align-items:center;gap:6px;cursor:pointer}
+    .result-grid{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:16px;width:100%}
+    .result-card{padding:16px;border-radius:14px;background:#ffffff;border:1px solid #e5e7eb;position:relative}
+    .score-badge{position:absolute;top:16px;right:16px;background:var(--accent);color:white;padding:6px 12px;border-radius:20px;font-weight:700;font-size:14px}
+    .score-badge.excellent{background:var(--success)}
+    .score-badge.good{background:#059669}
+    .score-badge.fair{background:var(--warning)}
+    .score-badge.poor{background:var(--danger)}
+    .candidate-name{font-size:1.2rem;font-weight:700;margin-bottom:4px;padding-right:80px}
+    .filename{color:var(--muted);font-size:0.9rem;margin-bottom:12px}
+    .recommendation{display:inline-block;padding:4px 8px;border-radius:8px;font-size:0.85rem;font-weight:600;margin-bottom:12px}
+    .recommendation.recommend{background:#dcfce7;color:#166534}
+    .recommendation.consider{background:#fef3c7;color:#92400e}
+    .recommendation.not-recommend{background:#fee2e2;color:#991b1b}
+    .skills-matched{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+    .skill-tag{background:#eff6ff;color:#1d4ed8;padding:4px 8px;border-radius:6px;font-size:0.8rem;font-weight:600}
+    .spinner{border:4px solid rgba(0,0,0,0.1);width:40px;height:40px;border-radius:50%;border-left-color:var(--accent);animation:spin 1s ease infinite;margin:0 auto}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    .progress-bar{width:100%;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;margin:8px 0}
+    .progress-fill{height:100%;background:var(--accent);transition:width 0.3s ease}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:12px 0}
+    .stat-item{text-align:center;padding:10px;background:#f8fafc;border-radius:10px}
+    .stat-value{font-size:1.2rem;font-weight:700;color:#1d4ed8}
+    .stat-label{font-size:0.8rem;color:var(--muted)}
+    .expandable{cursor:pointer;color:#1d4ed8;text-decoration:underline;font-size:0.9rem}
+    .hidden{display:none}
+    .alert{padding:12px 16px;border-radius:10px;margin-bottom:16px}
+    .alert.info{background:#eff6ff;color:#1e40af;border:1px solid #bfdbfe}
+    .alert.success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+    .alert.warning{background:#fffbeb;color:#92400e;border:1px solid #fed7aa}
+    .section{margin-bottom:24px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1 class="app-title">Resume Rater</h1>
+      <p class="subtitle">AI-powered resume analysis with advanced skill matching and fair scoring</p>
+    </div>
+
+    <div class="card section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+        <div>
+          <h3 style="margin:0 0 4px">Upload Resumes</h3>
+          <p style="margin:0;color:var(--muted);font-size:0.9rem">Drag & drop or browse for PDF/DOCX files</p>
+        </div>
+        <div class="mode-selector">
+          <label><input type="radio" name="mode" value="single" checked /> Single Analysis</label>
+          <label><input type="radio" name="mode" value="batch" /> Batch Processing</label>
+        </div>
+      </div>
+
+      <div id="drop-area" class="drop">
+        <div style="margin-bottom:8px">📄 Drop resume files here or click Browse</div>
+        <input id="fileElem" type="file" multiple style="display:none" accept=".pdf,.docx"/>
+        <button id="browseBtn" class="ghost">Browse Files</button>
+        <div class="file-list" id="file-list"></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <label style="display:block;margin-bottom:8px;font-weight:700">Job Description</label>
+        <textarea id="jobdesc" placeholder="Paste the complete job description here..." rows="6"></textarea>
+      </div>
+
+      <div style="margin-top:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label class="switch">
+          <input type="checkbox" id="includeAudio" />
+          <span>Generate TTS Audio (Single mode only)</span>
+        </label>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <button id="uploadBtn" class="primary">🚀 Analyze Resumes</button>
+          <button id="clearBtn" class="ghost">Clear All</button>
+          <button id="downloadRecommended" class="ghost success" style="display:none">📥 Download Recommendations</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="results-area" style="max-width:none;width:calc(100% - 48px);margin:24px auto">
+    <div id="loader" class="card" style="display:none;text-align:center;padding:40px">
+      <div class="spinner"></div>
+      <p style="margin:16px 0 8px;font-weight:700">Analyzing resumes with AI...</p>
+      <p style="margin:0;color:var(--muted);font-size:0.9rem">This may take 30-60 seconds per resume</p>
+      <div class="progress-bar" style="margin-top:16px">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div id="results-wrapper" style="display:none">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">Analysis Results</h3>
+          <div id="batch-stats" class="stats-grid" style="display:none">
+            <div class="stat-item">
+              <div class="stat-value" id="total-processed">0</div>
+              <div class="stat-label">Processed</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="recommended-count">0</div>
+              <div class="stat-label">Recommended</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="avg-score">0.0</div>
+              <div class="stat-label">Avg Score</div>
+            </div>
+          </div>
+        </div>
+        <div id="results" class="result-grid"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const fileElem = document.getElementById('fileElem');
+const browseBtn = document.getElementById('browseBtn');
+const dropArea = document.getElementById('drop-area');
+const fileListEl = document.getElementById('file-list');
+const uploadBtn = document.getElementById('uploadBtn');
+const clearBtn = document.getElementById('clearBtn');
+const resultsEl = document.getElementById('results');
+const downloadRecBtn = document.getElementById('downloadRecommended');
+const loaderEl = document.getElementById('loader');
+const resultsWrapper = document.getElementById('results-wrapper');
+const progressFill = document.getElementById('progress-fill');
+const batchStats = document.getElementById('batch-stats');
+const includeAudioEl = document.getElementById('includeAudio');
+
+let files = [];
+let isProcessing = false;
+let lastRecommendedCount = 0;
+
+browseBtn.addEventListener('click', () => fileElem.click());
+fileElem.addEventListener('change', (e) => handleFiles(e.target.files));
+
+['dragenter','dragover','dragleave','drop'].forEach(eventName => {
+  dropArea.addEventListener(eventName, preventDefaults, false);
+});
+function preventDefaults(e){ e.preventDefault(); e.stopPropagation(); }
+
+dropArea.addEventListener('dragenter', () => dropArea.classList.add('dragover'));
+dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+dropArea.addEventListener('drop', (e) => {
+  dropArea.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+function handleFiles(fileListObj) {
+  let validFiles = [];
+  let invalidFiles = [];
+  for (let f of fileListObj) {
+    const fileName = f.name.toLowerCase();
+    if (fileName.endsWith('.pdf') || fileName.endsWith('.docx')) {
+      const isDuplicate = files.some(existing => existing.name === f.name && existing.size === f.size);
+      if (!isDuplicate) validFiles.push(f);
+    } else {
+      invalidFiles.push(f.name);
+    }
+  }
+  files.push(...validFiles);
+
+  if (invalidFiles.length > 0) showAlert(`Invalid files ignored: ${invalidFiles.join(', ')}. Only PDF and DOCX files are supported.`, 'warning');
+  if (validFiles.length > 0) showAlert(`Added ${validFiles.length} file(s) for analysis.`, 'success');
+
+  renderFileList();
+  updateUploadButton();
+}
+
+function renderFileList(){
+  if (files.length === 0) { fileListEl.innerHTML = ''; return; }
+  fileListEl.innerHTML = files.map((f, idx) => `
+    <div class="file-item">
+      <div class="file-meta">
+        <div class="file-icon">${f.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'DOC'}</div>
+        <div>
+          <div style="font-weight:700">${escapeHtml(f.name)}</div>
+          <div style="font-size:0.8rem;color:var(--muted)">${formatFileSize(f.size)}</div>
+        </div>
+      </div>
+      <button class="ghost danger" onclick="removeFile(${idx})">Remove</button>
+    </div>
+  `).join('');
+}
+
+function removeFile(index) {
+  files.splice(index, 1);
+  renderFileList();
+  updateUploadButton();
+}
+
+document.getElementById('jobdesc').addEventListener('input', updateUploadButton);
+
+clearBtn.onclick = () => {
+  files = [];
+  renderFileList();
+  resultsEl.innerHTML = '';
+  resultsWrapper.style.display = 'none';
+  document.getElementById('jobdesc').value = '';
+  clearAlerts();
+  lastRecommendedCount = 0;
+  updateRecommendationButtonVisibility();
+  updateUploadButton();
+};
+
+downloadRecBtn.onclick = async () => {
+  try {
+    downloadRecBtn.disabled = true;
+    downloadRecBtn.textContent = '⏳ Checking...';
+    const resp = await fetch('/download-recommended');
+    if(resp.status === 200){
+      const blob = await resp.blob();
+      downloadBlob(blob, 'recommended_candidates.txt');
+      showAlert('✅ Recommendations downloaded successfully!', 'success');
+    } else {
+      const js = await resp.json();
+      showAlert(js.detail || 'No recommendations available yet.', 'warning');
+    }
+  } catch (e) {
+    showAlert('❌ Failed to download recommendations: ' + e.message, 'danger');
+  } finally {
+    downloadRecBtn.disabled = false;
+    downloadRecBtn.textContent = '📥 Download Recommendations' + (lastRecommendedCount > 0 ? ` (${lastRecommendedCount})` : '');
+  }
+};
+
+uploadBtn.addEventListener('click', async () => {
+  if(files.length === 0) { showAlert('Please add at least one resume file.', 'warning'); return; }
+
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const isSingle = mode === 'single';
+  const jobdesc = document.getElementById('jobdesc').value.trim();
+
+  if(isSingle && files.length > 1) {
+    if(!confirm(`You're in single mode but have ${files.length} files. Only the first will be processed. Continue?`)) return;
+  }
+  if(!jobdesc && !confirm('Job description is empty. The analysis will be less accurate. Continue?')) return;
+
+  await processResumes(isSingle, jobdesc);
+});
+
+document.querySelectorAll('input[name="mode"]').forEach(radio => {
+  radio.addEventListener('change', function() {
+    updateRecommendationButtonVisibility();
+    updateUploadButton();
+  });
+});
+
+function updateRecommendationButtonVisibility() {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  if (mode === 'single') {
+    includeAudioEl.disabled = false;
+    downloadRecBtn.style.display = 'none';
+  } else {
+    includeAudioEl.checked = false;
+    includeAudioEl.disabled = true;
+    if (lastRecommendedCount > 0) {
+      downloadRecBtn.style.display = 'inline-flex';
+      downloadRecBtn.textContent = `📥 Download Recommendations (${lastRecommendedCount})`;
+    } else {
+      downloadRecBtn.style.display = 'none';
+    }
+  }
+}
+
+async function processResumes(isSingle, jobdesc) {
+  isProcessing = true;
+  updateUploadButton();
+
+  progressFill.style.width = '0%';
+  loaderEl.style.display = 'block';
+  resultsWrapper.style.display = 'none';
+  resultsEl.innerHTML = '';
+  clearAlerts();
+
+  const includeAudio = includeAudioEl.checked && isSingle;
+
+  try {
+    const fd = new FormData();
+    fd.append('job_description', jobdesc);
+    fd.append('include_audio', includeAudio ? 'true' : 'false');
+
+    if(isSingle) {
+      fd.append('resume', files[0], files[0].name);
+      updateProgress(50);
+      const resp = await fetch('/rate', {method:'POST', body: fd});
+      const data = await resp.json();
+
+      updateProgress(100);
+      setTimeout(() => {
+        renderResults([data], false);
+        loaderEl.style.display = 'none';
+        resultsWrapper.style.display = 'block';
+        lastRecommendedCount = 0;
+        updateRecommendationButtonVisibility();
+      }, 300);
+
+    } else {
+      for (let f of files) fd.append('resumes', f, f.name);
+
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress = Math.min(progress + Math.random() * 15, 85);
+        updateProgress(progress);
+      }, 900);
+
+      const resp = await fetch('/batch-rate', {method:'POST', body: fd});
+      const data = await resp.json();
+
+      clearInterval(progressInterval);
+      updateProgress(100);
+
+      setTimeout(() => {
+        renderResults(data, true);
+        loaderEl.style.display = 'none';
+        resultsWrapper.style.display = 'block';
+        showAlert(`✅ Batch processing complete! Analyzed ${data.length} resumes.`, 'success');
+      }, 300);
+    }
+  } catch (err) {
+    loaderEl.style.display = 'none';
+    showAlert('❌ Analysis failed: ' + err.message, 'danger');
+  } finally {
+    isProcessing = false;
+    updateUploadButton();
+  }
+}
+
+function updateProgress(percentage) { progressFill.style.width = percentage + '%'; }
+
+function updateUploadButton() {
+  const hasFiles = files.length > 0;
+  uploadBtn.disabled = !hasFiles || isProcessing;
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const isSingle = mode === 'single';
+  const label = hasFiles ? `🚀 Analyze ${isSingle ? '1' : files.length} Resume${(isSingle ? 1 : files.length) > 1 ? 's' : ''}` : '🚀 Analyze Resumes';
+  uploadBtn.textContent = isProcessing ? '⏳ Processing...' : label;
+
+  const hasJobDesc = document.getElementById('jobdesc').value.trim().length > 0;
+  if (!hasJobDesc && hasFiles) showAlert('💡 Tip: Add a job description for more accurate skill matching', 'info');
+}
+
+function renderResults(results, isBatch) {
+  if (!results || results.length === 0) { resultsWrapper.style.display = 'none'; return; }
+
+  if (isBatch) {
+    const actuallyRecommended = results.filter(r => {
+      const score = r?.final_score_0_10 || 0;
+      const decisionForDisplay = decisionFromScore(score).toLowerCase();
+      return decisionForDisplay.includes('recommend');
+    }).length;
+
+    lastRecommendedCount = actuallyRecommended;
+    const avgScore = (results.reduce((sum, r) => sum + (r.final_score_0_10 || 0), 0) / results.length).toFixed(1);
+
+    document.getElementById('total-processed').textContent = results.length;
+    document.getElementById('recommended-count').textContent = actuallyRecommended;
+    document.getElementById('avg-score').textContent = avgScore;
+    batchStats.style.display = 'grid';
+
+    if (actuallyRecommended > 0) {
+      downloadRecBtn.style.display = 'inline-flex';
+      downloadRecBtn.textContent = `📥 Download Recommendations (${actuallyRecommended})`;
+    } else {
+      downloadRecBtn.style.display = 'none';
+    }
+  } else {
+    batchStats.style.display = 'none';
+    downloadRecBtn.style.display = 'none';
+    lastRecommendedCount = 0;
+  }
+
+  results.sort((a, b) => (b.final_score_0_10 || 0) - (a.final_score_0_10 || 0));
+  resultsEl.innerHTML = results.map(result => createResultCard(result)).join('');
+}
+
+function decisionFromScore(score) {
+  if (score >= 7.5) return 'Strong Recommend';
+  if (score >= 6.5) return 'Recommend';
+  if (score >= 5.0) return 'Consider';
+  return 'Not Recommended';
+}
+
+function createResultCard(result) {
+  const score = result.final_score_0_10 || 0;
+  const scoreClass = score >= 8 ? 'excellent' : score >= 6.5 ? 'good' : score >= 5 ? 'fair' : 'poor';
+  const displayDecision = decisionFromScore(score);
+  const recClass = displayDecision.toLowerCase().includes('recommend') && !displayDecision.toLowerCase().includes('not') ? 'recommend' :
+                   displayDecision.toLowerCase().includes('consider') ? 'consider' : 'not-recommend';
+
+  const matchedSkills = Array.isArray(result.matched_skills) ? result.matched_skills : [];
+  const totalJdSkills = (typeof result.total_jd_skills === 'number' && result.total_jd_skills > 0)
+    ? result.total_jd_skills
+    : (Array.isArray(result.jd_skills) ? result.jd_skills.length : 0);
+
+  const confidenceScores = result.confidence_scores || {};
+  const skillEvidence = result.skill_evidence || {};
+  const overallAssessment = result.llm_justification?.overall_assessment || {};
+  const keyStrengths = overallAssessment.key_strengths || [];
+  const areasForImprovement = overallAssessment.areas_for_improvement || [];
+  const hasAudio = result.tts_audio_base64 || result.tts_saved_filename;
+  const hasFeedback = result.feedback_report_base64;
+
+  const cid = (result.candidate_name || 'Candidate').replace(/[^A-Za-z0-9_-]/g, '');
+  const safeName = escapeHtml(result.candidate_name || 'Candidate');
+
+  return `
+    <div class="result-card" data-candidate="${safeName}">
+      <div class="score-badge ${scoreClass}">${score.toFixed(1)}/10</div>
+
+      <div class="candidate-name">${safeName}</div>
+      <div class="filename">📄 ${escapeHtml(result.filename || '')}</div>
+
+      <div class="recommendation ${recClass}">${escapeHtml(displayDecision)}</div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-weight:700;margin-bottom:8px">🎯 Skills Matched (${matchedSkills.length}/${totalJdSkills})</div>
+        <div class="skills-matched">
+          ${matchedSkills.slice(0, 8).map(skill => {
+            const confidence = confidenceScores[skill] || 0;
+            const confidenceClass = confidence >= 0.9 ? 'excellent' : confidence >= 0.7 ? 'good' : 'fair';
+            return `<span class="skill-tag ${confidenceClass}" title="Confidence: ${(confidence * 100).toFixed(0)}%">${escapeHtml(skill)}</span>`;
+          }).join('')}
+          ${matchedSkills.length > 8 ? `<span class="skill-tag" style="background:#f3f4f6;color:#6b7280">+${matchedSkills.length - 8} more</span>` : ''}
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div class="expandable" onclick="toggleSection(this, 'strengths-${cid}')">✨ Key Strengths (${keyStrengths.length})</div>
+        <div id="strengths-${cid}" class="hidden" style="margin-top:8px">
+          <ul style="margin:0;padding-left:16px">
+            ${keyStrengths.map(strength => `<li style="margin-bottom:4px">${escapeHtml(strength)}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      ${areasForImprovement.length > 0 ? `
+      <div style="margin-bottom:12px">
+        <div class="expandable" onclick="toggleSection(this, 'improvements-${cid}')">🔧 Growth Areas (${areasForImprovement.length})</div>
+        <div id="improvements-${cid}" class="hidden" style="margin-top:8px">
+          <ul style="margin:0;padding-left:16px">
+            ${areasForImprovement.map(area => `<li style="margin-bottom:4px">${escapeHtml(area)}</li>`).join('')}
+          </ul>
+        </div>
+      </div>` : ''}
+
+      <div style="margin-bottom:12px">
+        <div class="expandable" onclick="toggleSection(this, 'detailed-${cid}')">📊 Detailed Component Scores</div>
+        <div id="detailed-${cid}" class="hidden" style="margin-top:8px">
+          <div class="stats-grid">
+            ${Object.entries(result.per_component_0_10 || {}).map(([key, value]) => `
+              <div class="stat-item">
+                <div class="stat-value">${Number(value || 0).toFixed(1)}</div>
+                <div class="stat-label">${formatComponentName(key)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      ${Object.keys(skillEvidence).length > 0 ? `
+      <div style="margin-bottom:12px">
+        <div class="expandable" onclick="toggleSection(this, 'evidence-${cid}')">🔍 Skill Evidence</div>
+        <div id="evidence-${cid}" class="hidden" style="margin-top:8px;max-height:200px;overflow-y:auto">
+          ${Object.entries(skillEvidence).slice(0, 5).map(([skill, evidence]) => `
+            <div style="margin-bottom:8px;padding:8px;background:#f8fafc;border-radius:10px">
+              <div style="font-weight:700;color:#1d4ed8;margin-bottom:4px">${escapeHtml(skill)}</div>
+              <div style="font-size:0.8rem;color:var(--muted);font-style:italic">
+                "${escapeHtml((evidence && evidence[0]) ? String(evidence[0]).substring(0, 120) : '')}..."
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>` : ''}
+
+      ${(hasAudio || hasFeedback) ? `
+      <div style="border-top:1px solid #e5e7eb;padding-top:12px;margin-top:12px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${result.tts_saved_filename || result.tts_audio_base64 ? `
+            <button class="ghost primary" onclick="playAudio('${cid}', '${result.tts_saved_filename || ''}', '${result.tts_audio_base64 || ''}')">🔊 Play Summary</button>
+          ` : ''}
+          ${hasFeedback ? `
+            <button class="ghost warning" onclick="downloadFeedback('${cid}', '${result.feedback_report_base64}')">📋 Download Feedback</button>
+          ` : ''}
+          ${result.tts_saved_filename ? `
+            <a href="/audio/${encodeURIComponent(result.tts_saved_filename)}" download class="ghost" style="text-decoration:none;display:inline-flex;align-items:center">💾 Download Audio</a>
+          ` : ''}
+        </div>
+        <div id="audio-container-${cid}" style="margin-top:8px"></div>
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function toggleSection(element, sectionId) {
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+  section.classList.toggle('hidden');
+}
+function playAudio(cid, serverFilename, base64Audio) {
+  const containerId = `audio-container-${cid}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const audio = document.createElement('audio');
+  audio.controls = true; audio.style.width = '100%';
+  if (serverFilename) {
+    audio.src = `/audio/${encodeURIComponent(serverFilename)}`;
+  } else if (base64Audio) {
+    const bytes = atob(base64Audio);
+    const uint8Array = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i++) uint8Array[i] = bytes.charCodeAt(i);
+    const blob = new Blob([uint8Array], { type: 'audio/wav' });
+    audio.src = URL.createObjectURL(blob);
+  }
+  container.appendChild(audio);
+  audio.play().catch(() => {});
+}
+function downloadFeedback(candidateId, base64Pdf) {
+  const bytes = atob(base64Pdf);
+  const uint8Array = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) uint8Array[i] = bytes.charCodeAt(i);
+  const blob = new Blob([uint8Array], { type: 'application/pdf' });
+  downloadBlob(blob, `Feedback_${candidateId}.pdf`);
+}
+
+function escapeHtml(text) {
+  if (text === null || text === undefined) return '';
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
+}
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024; const sizes = ['B','KB','MB','GB'];
+  const i = Math.floor(Math.log(bytes)/Math.log(k));
+  return parseFloat((bytes/Math.pow(k,i)).toFixed(1))+' '+sizes[i];
+}
+function formatComponentName(key) { return key.replace(/_/g,' ').replace(/score$/,'').replace(/\b\w/g, l=>l.toUpperCase()); }
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function showAlert(message, type='info') {
+  const el = document.createElement('div'); el.className = `alert ${type}`; el.innerHTML = message;
+  document.querySelector('.container').insertAdjacentElement('afterbegin', el);
+  if (type === 'success' || type === 'info') setTimeout(()=>{ if (el.parentNode) el.remove(); }, 5000);
+}
+function clearAlerts(){ document.querySelectorAll('.alert').forEach(a=>a.remove()); }
+
+window.addEventListener('load', () => {
+  updateRecommendationButtonVisibility();
+  updateUploadButton();
+});
+</script>
+</body>
+</html>
