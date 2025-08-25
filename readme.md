@@ -4,7 +4,7 @@
 ![fastapi](https://img.shields.io/badge/FastAPI-0.116-green.svg)
 ![license](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-An intelligent FastAPI application to automatically score, analyze, and rank resumes against a job description using advanced AI models (Google Gemini & Groq Llama 3), a comprehensive scoring algorithm, and a user-friendly web interface.
+An intelligent FastAPI application to automatically score, analyze, and rank resumes against a job description using advanced AI models (Google Gemini and Groq GPT-4o), a comprehensive scoring algorithm, and a user-friendly web interface.
 
 ---
 
